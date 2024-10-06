@@ -1,0 +1,86 @@
+---
+title: "Lab-04 Dynamic Graphics"
+output: flexdashboard::flex_dashboard
+runtime: shiny
+---
+
+```{r global, include = FALSE}
+
+library(Lahman)
+library(dplyr)
+library(shiny)
+
+data(Teams)
+
+ave.so <- Teams$SO / Teams$G
+year <- Teams$yearID
+ave.so.min <- min(ave.so, na.rm = TRUE)
+ave.so.max <- max(ave.so, na.rm = TRUE)
+
+league.ave <- tapply(X = ave.so,
+              INDEX = as.factor(year),
+              FUN = "mean",
+              na.rm = TRUE)
+
+league.year <- as.numeric(names(league.ave))
+
+Teams$ave.so <- ave.so
+
+```
+
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+Select a team to highlight on the graph.
+
+```{r}
+
+selectInput( inputId = "my_team",
+             label = "Select a team:",
+             choices = unique(Teams$name),
+             selected = "Boston Red Sox")
+
+```
+
+
+**Author:** Phani Srija Kesara
+
+**Date:**  `r format(Sys.time(), '%B %d, %Y')`
+
+
+Column
+-----------------------------------------------------------------------
+
+### Strikeouts on the Rise
+
+```{r}
+
+renderPlot({
+
+index <- which(Teams$yearID <= 2012 & Teams$yearID >= 1900)
+  Teams_filtered <- Teams[index, ]
+  ave.so_filtered <- ave.so[index]
+  year_filtered <- year[index]
+
+index_league <- which(league.year <= 2012 & league.year >= 1900)
+league.ave_filtered <- league.ave[index_league]
+league.year_filtered <- league.year[index_league]
+  
+team_name <- input$my_team
+dat_one_team <- Teams_filtered %>% filter(name == team_name)
+
+plot(year_filtered, ave.so_filtered, col = "gray85", pch = 16, cex = 0.75, 
+       xlim = c(1900, 2012), ylim = c(ave.so.min, ave.so.max),
+       xlab = "Year", ylab = "Average Strikeouts (SO per Game)", 
+       main = "Strikeouts on the Rise")
+  
+lines(league.year_filtered, league.ave_filtered, lwd = 2, col = "blue")
+
+lines(dat_one_team$yearID, dat_one_team$ave.so, lwd = 2, col = "red")
+
+ })
+
+```
+
